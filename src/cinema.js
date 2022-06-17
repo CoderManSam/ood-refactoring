@@ -1,3 +1,7 @@
+const maxCapacity = 100
+const anHour = 60
+const timeItTakesToCleanScreen = 20
+
 class Cinema {
 
   constructor() {
@@ -5,9 +9,8 @@ class Cinema {
     this.screens = []
   }
 
-  //Add a new screen
-  save(screenName, capacity) {
-    if (capacity > 100) {
+  addNewScreen(screenName, capacity) {
+    if (capacity > maxCapacity) {
       return 'Exceeded max capacity'
     }
 
@@ -30,8 +33,7 @@ class Cinema {
     })
   }
 
-  //Add a new film
-  addNew(movieName, r, duration) {
+  addNewFilm(movieName, rating, duration) {
 
     //Check the film doesn't already exist
     let movie = null
@@ -45,39 +47,36 @@ class Cinema {
       return 'Film already exists'
     }
 
-    //Check the rating is valid
-    if (r!="U" && r!="PG") {
-      if (r!="12" && r!="15" && r!="18") {
+    const ratingIsInvalid = rating!="U" && rating!="PG" && rating!="12" && rating!="15" && rating!="18"
+
+    if (ratingIsInvalid) {
         return 'Invalid rating'
-      }
     }
     
-    //Check duration
-    const result = /^(\d?\d):(\d\d)$/.exec(duration)
-    if(result==null) {
+    const durationValidity = /^(\d?\d):(\d\d)$/.exec(duration)
+    if(durationValidity==null) {
       return 'Invalid duration'
     }
 
-    const hours = parseInt(result[1])
-    const mins = parseInt(result[2])
-    if(hours<=0 || mins>60) {
+    const hours = parseInt(durationValidity[1])
+    const mins = parseInt(durationValidity[2])
+    if(hours<=0 || mins>anHour) {
       return 'Invalid duration'
     }
 
-    this.films.push({name:movieName, rating:r, duration: duration})
+    this.films.push({name:movieName, rating:rating, duration: duration})
   }
 
-  //Add a showing for a specific film to a screen at the provided start time
-  add(movie, screenName, startTime) {
+  addShowing(movie, screenName, startTime) {
 
-    let result = /^(\d?\d):(\d\d)$/.exec(startTime)
-    if(result==null) {
+    let startTimeValidity = /^(\d?\d):(\d\d)$/.exec(startTime)
+    if(startTimeValidity==null) {
       return 'Invalid start time'
     }
 
-    const intendedStartTimeHours = parseInt(result[1])
-    const intendedStartTimeMinutes = parseInt(result[2])
-    if(intendedStartTimeHours<=0 || intendedStartTimeMinutes>60) {
+    const intendedStartTimeHours = parseInt(startTimeValidity[1])
+    const intendedStartTimeMinutes = parseInt(startTimeValidity[2])
+    if(intendedStartTimeHours<=0 || intendedStartTimeMinutes>anHour) {
       return 'Invalid start time'
     }
 
@@ -95,28 +94,25 @@ class Cinema {
     }
 
     //From duration, work out intended end time
-    //if end time is over midnight, it's an error
-    //Check duration
-    result = /^(\d?\d):(\d\d)$/.exec(film.duration)
-    if(result==null) {
+    startTimeValidity = /^(\d?\d):(\d\d)$/.exec(film.duration)
+    if(startTimeValidity==null) {
       return 'Invalid duration'
     }
 
-    const durationHours = parseInt(result[1])
-    const durationMins = parseInt(result[2])
+    const durationHours = parseInt(startTimeValidity[1])
+    const durationMins = parseInt(startTimeValidity[2])
     
-    //Add the running time to the duration
     let intendedEndTimeHours = intendedStartTimeHours + durationHours
     
-    //It takes 20 minutes to clean the screen so add on 20 minutes to the duration 
-    //when working out the end time
-    let intendedEndTimeMinutes = intendedStartTimeMinutes + durationMins + 20
-    if (intendedEndTimeMinutes>=60) {
-      intendedEndTimeHours += Math.floor(intendedEndTimeMinutes/60)
-      intendedEndTimeMinutes = intendedEndTimeMinutes%60
+    let intendedEndTimeMinutes = intendedStartTimeMinutes + durationMins + timeItTakesToCleanScreen
+    if (intendedEndTimeMinutes>=anHour) {
+      intendedEndTimeHours += Math.floor(intendedEndTimeMinutes/anHour)
+      intendedEndTimeMinutes = intendedEndTimeMinutes%anHour
     }
 
-    if(intendedEndTimeHours>=24) {
+    const filmEndsAfterMidnight = intendedEndTimeHours>=24
+
+    if(filmEndsAfterMidnight) {
       return 'Invalid start time - film ends after midnight'
     }
 
@@ -139,56 +135,58 @@ class Cinema {
 
       //Get the start time in hours and minutes
       const startTime = theatre.showings[i].startTime
-      result = /^(\d?\d):(\d\d)$/.exec(startTime)
-      if(result==null) {
+      startTimeValidity = /^(\d?\d):(\d\d)$/.exec(startTime)
+      if(startTimeValidity==null) {
         return 'Invalid start time'
       }
   
-      const startTimeHours = parseInt(result[1])
-      const startTimeMins = parseInt(result[2])
-      if(startTimeHours<=0 || startTimeMins>60) {
+      const startTimeHours = parseInt(startTimeValidity[1])
+      const startTimeMins = parseInt(startTimeValidity[2])
+      if(startTimeHours<=0 || startTimeMins>anHour) {
         return 'Invalid start time'
       }
 
       //Get the end time in hours and minutes
       const endTime = theatre.showings[i].endTime
-      result = /^(\d?\d):(\d\d)$/.exec(endTime)
-      if(result==null) {
+      startTimeValidity = /^(\d?\d):(\d\d)$/.exec(endTime)
+      if(startTimeValidity==null) {
         return 'Invalid end time'
       }
   
-      const endTimeHours = parseInt(result[1])
-      const endTimeMins = parseInt(result[2])
-      if(endTimeHours<=0 || endTimeMins>60) {
+      const endTimeHours = parseInt(startTimeValidity[1])
+      const endTimeMins = parseInt(startTimeValidity[2])
+      if(endTimeHours<=0 || endTimeMins>anHour) {
         return 'Invalid end time'
       }
 
       //if intended start time is between start and end
-      const d1 = new Date()
-      d1.setMilliseconds(0)
-      d1.setSeconds(0)
-      d1.setMinutes(intendedStartTimeMinutes)
-      d1.setHours(intendedStartTimeHours)
+      const intendedStartTime = new Date()
+      intendedStartTime.setMilliseconds(0)
+      intendedStartTime.setSeconds(0)
+      intendedStartTime.setMinutes(intendedStartTimeMinutes)
+      intendedStartTime.setHours(intendedStartTimeHours)
 
-      const d2 = new Date()
-      d2.setMilliseconds(0)
-      d2.setSeconds(0)
-      d2.setMinutes(intendedEndTimeMinutes)
-      d2.setHours(intendedEndTimeHours)
+      const intendedEndTime = new Date()
+      intendedEndTime.setMilliseconds(0)
+      intendedEndTime.setSeconds(0)
+      intendedEndTime.setMinutes(intendedEndTimeMinutes)
+      intendedEndTime.setHours(intendedEndTimeHours)
 
-      const d3 = new Date()
-      d3.setMilliseconds(0)
-      d3.setSeconds(0)
-      d3.setMinutes(startTimeMins)
-      d3.setHours(startTimeHours)
+      const actualStartTime = new Date()
+      actualStartTime.setMilliseconds(0)
+      actualStartTime.setSeconds(0)
+      actualStartTime.setMinutes(startTimeMins)
+      actualStartTime.setHours(startTimeHours)
 
-      const d4 = new Date()
-      d4.setMilliseconds(0)
-      d4.setSeconds(0)
-      d4.setMinutes(endTimeMins)
-      d4.setHours(endTimeHours)
+      const actualEndTime = new Date()
+      actualEndTime.setMilliseconds(0)
+      actualEndTime.setSeconds(0)
+      actualEndTime.setMinutes(endTimeMins)
+      actualEndTime.setHours(endTimeHours)
 
-      if ((d1 > d3 && d1 < d4) || (d2 > d3 && d2 < d4) || (d1 < d3 && d2 > d4) ) {
+      if ((intendedStartTime > actualStartTime && intendedStartTime < actualEndTime) || 
+          (intendedEndTime > actualStartTime && intendedEndTime < actualEndTime) || 
+          (intendedStartTime < actualStartTime && intendedEndTime > actualEndTime) ) {
         error = true
         break
       }
@@ -198,7 +196,6 @@ class Cinema {
       return 'Time unavailable'
     }
 
-    //Add the new start time and end time to the showing
     theatre.showings.push({
       film: film,
       startTime: startTime,
